@@ -3,51 +3,56 @@ from machine import Pin
 from math import ceil
 
 
-DATA_PIN = 27
-LED_LENGTH = 19
-MAX_BRIGHTNESS = 5
-np = NeoPixel(Pin(DATA_PIN), LED_LENGTH+1)
-np[19] = (10, 10, 10)
-np.write()
-
 class Weight:
     MAX_WEIGHT = 1.0
-
-
-def clear():
-    for led in range(LED_LENGTH+1):
-        np[led] = (0, 0, 0)
-        np.write()
-
-
-def calc_led(weight):
-    use_max_weight = Weight.MAX_WEIGHT
-    if weight > use_max_weight:
-        Weight.MAX_WEIGHT = weight
-    porcentagem = (weight/use_max_weight)*100
-    leds = ceil(((weight*100)/use_max_weight*LED_LENGTH)/100)
-    if leds > LED_LENGTH:
-        leds = LED_LENGTH
-    elif leds < 0:
-        leds = 0
-    return leds, porcentagem
-
-def cor(porcentagem):
-    if int(porcentagem >= 75):
-        return (0, MAX_BRIGHTNESS, 0)
-    elif int(porcentagem >= 45) and int(porcentagem <75):
-        return (MAX_BRIGHTNESS, 3, 0)
-    else:
-        return (MAX_BRIGHTNESS, 0, 0)
     
+class LedStrip:
     
-def show(weight: float=535):
-    
-    calc_led(weight=weight)
-    leds, porcentagem = calc_led(weight=weight)
-    color = cor(porcentagem)
-    for led in range(leds):
-        np[led] = color
-        np.write()
-    return leds
+    def __init__(self):
+        self.DATA_PIN = 27
+        self.LED_LENGTH = 19
+        self.MAX_BRIGHTNESS = 5
+        self.np = NeoPixel(Pin(self.DATA_PIN), self.LED_LENGTH+1)
+        self.np[19] = (10, 10, 10)
+        self.np.write()
+        self.last_leds = None
 
+
+    def clear(self):
+        for led in range(self.LED_LENGTH+1):
+            self.np[led] = (0, 0, 0)
+            self.np.write()
+
+    def calc_led(self, weight):
+        use_max_weight = Weight.MAX_WEIGHT
+        if weight > use_max_weight:
+            Weight.MAX_WEIGHT = weight
+        porcentagem = (weight/use_max_weight)*100
+        leds = ceil(((weight*100)/use_max_weight*self.LED_LENGTH)/100)
+        if leds > self.LED_LENGTH:
+            leds = self.LED_LENGTH
+        elif leds < 0:
+            leds = 0
+        if leds != self.last_leds:
+            self.last_leds = leds
+            self.clear()
+        return leds, porcentagem
+
+    def cor(self, porcentagem):
+        if int(porcentagem >= 75):
+            return (0, self.MAX_BRIGHTNESS, 0)
+        elif int(porcentagem >= 45) and int(porcentagem <75):
+            return (self.MAX_BRIGHTNESS, 3, 0)
+        else:
+            return (self.MAX_BRIGHTNESS, 0, 0)
+        
+        
+    def show(self, weight: float=535):
+        
+        self.calc_led(weight=weight)
+        leds, porcentagem = self.calc_led(weight=weight)
+        color = self.cor(porcentagem)
+        for led in range(leds):
+            self.np[led] = color
+            self.np.write()
+        return leds

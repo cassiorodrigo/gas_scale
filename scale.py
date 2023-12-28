@@ -10,7 +10,7 @@ class Scale(HX711):
             d_out=25,
             pd_sck=26
             )
-        self.tara_value = 371933  # pre-stabilished tara value.
+        self.tara_value = 364580  # pre-stabilished tara value.
         self.cal_constant = -21.32897  # pre-stabilished calibration constant
         self.full_vessel_weight = 535.0  # weight used for calibration. This is for initializing with the calibrated weight.
 
@@ -30,8 +30,9 @@ class Scale(HX711):
         
     def tara(self):
         _res = input("Remove any weight from the scale and hit enter: ")
-        self.tara_value = self.read_mean(read_times=20, raw=True)
-        print(f"New tara falue: {self.tara_value}")
+        self.tara_value = self.read()
+#         self.tara_value = self.read_mean(read_times=20, raw=False)
+        print(f"New tara value: {self.tara_value}")
         
     def reset_full_vessel_weight(self):
         self.full_vessel_weight = self.read_mean(10)
@@ -39,18 +40,23 @@ class Scale(HX711):
         
     def read_mean(self, read_times: int=10, raw: bool=False):
         reads = []
-        for _ in range(reads_times):
-            reads.append(self.read())
-            sleep_us(10)
-        if max(reads)/min(reads) > 0.1:  # 10% error allowed
+        for _ in range(read_times):
+            if self.is_ready() and raw:
+                reads.append(self.read())
+            else:
+                reads.append((self.read()-self.tara_value)/self.cal_constant)
+        variance = max(reads)/min(reads)
+        if variance > 1.1:  # 10% error allowed
             print(f'More than 10% error on {read_times} reads. \nRestarting the read_mean method.')
+            print(f'Variance: {variance} \nmax value: {max(reads)}\nmin value: {min(reads)}')
             self.read_mean(read_times)
             
         mean = ceil(sum(reads)/read_times)
-        if raw:
-            return mean
-        else:
-            return (mean-self.tara_value)/self.cal_constant
-    
+        return mean
+#         if raw:
+#             return mean
+#         else:
+#             return (mean-self.tara_value)/self.cal_constant
+#     
     
             
